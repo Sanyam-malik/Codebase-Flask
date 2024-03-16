@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  codebase-flask:
+    container_name: codebase-flask
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4500:5000"
+    environment:
+      AUTO_UPDATE: "false"
+      DATABASE_NAME: "codebase"
+      GIT_URL: "https://github.com/Sanyam-malik/Codebase.git"
+      DEST_PATH: "codebase"
+      BRANCH_NAME: "new-journey"
+      ACCESS_TOKEN: ""
+      UPDATE_URL: "https://github.com/Sanyam-malik/Codebase-Flask.git"
+      UPDATE_BRANCH: "main"
+      UPDATE_ACCESS_TOKEN: ""
+    restart: always
+
+networks:
+  codebase-network:
+    name: codebase-network
