@@ -89,6 +89,16 @@ trackers_table = '''
         );
 '''
 
+maillog_table = '''
+        CREATE TABLE IF NOT EXISTS maillog (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subject TEXT NOT NULL,
+            body TEXT NOT NULL,
+            recipient TEXT NOT NULL,
+            date TEXT
+        );
+'''
+
 
 def init_database():
     connector = create_connection()
@@ -100,16 +110,32 @@ def init_database():
     create_table(connector, companies_table)
     create_table(connector, remarks_table)
     create_table(connector, settings_table)
+    create_table(connector, maillog_table)
+    retrieve_backup()
     return connector
+
+
+def retrieve_backup():
+    backup_db = "backup_" + database
+    conn = create_connection()
+    if os.path.exists(backup_db):
+        logging.info("Migration Started....")
+        # Importing the maillog table entries
+        backup_conn = create_connection(backup_db)
+        result = fetch_data(backup_conn, "SELECT subject, body, recipient, date from maillog")
+        if len(result) > 0:
+            logging.info('Migrating the maillogs....')
+            for item in result:
+                insert_data(conn, "maillog", item)
 
 
 def remove_database():
     try:
         # Check if the file exists before attempting to delete
         if os.path.exists(database):
-            if os.path.exists("backup_"+database):
+            if os.path.exists("backup_" + database):
                 os.remove("backup_" + database)
-            os.rename(database, "backup_"+database)
+            os.rename(database, "backup_" + database)
             logging.info(f"Database Backup '{database}' created successfully.")
         else:
             logging.info(f"Database file '{database}' not found.")
@@ -117,9 +143,12 @@ def remove_database():
         logging.warning(f"Error deleting database file '{database}': {e}")
 
 
-def create_connection():
+def create_connection(db=None):
     """Create a connection to the SQLite database."""
-    connector = sqlite3.connect(database)
+    if db is not None:
+        connector = sqlite3.connect(db)
+    else:
+        connector = sqlite3.connect(database)
     return connector
 
 
