@@ -1,15 +1,14 @@
 import os
-import re
 import threading
 from datetime import datetime, timedelta
 
 import sysenv
 from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS  # Import the CORS extension
+from flask_cors import CORS
 import logging
 import database
 import updator
-import schedule
+import utility
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -77,7 +76,7 @@ def get_problems():
             f.close()
 
         problems.append(
-            {'id': id, 'name': name, 'slug': create_slug(name), 'type': type, 'description': description, 'url': url, 'level': level,
+            {'id': id, 'name': name, 'slug': utility.create_slug(name), 'type': type, 'description': description, 'url': url, 'level': level,
              'status': status,
              'notes': notes, 'date': date, 'filename': filename, 'code': code, 'companies': companies,
              'remarks': remarks})
@@ -89,7 +88,7 @@ def get_problems():
 def get_problem_types():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT name, description FROM problem_type")
-    problem_types = [{'name': name, 'description': description, 'slug': create_slug(name)} for name, description in data]
+    problem_types = [{'name': name, 'description': description, 'slug': utility.create_slug(name)} for name, description in data]
     database.close_connection(conn)
     return jsonify({'problem_types': problem_types})
 
@@ -98,7 +97,7 @@ def get_problem_types():
 def get_problem_levels():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT distinct(p.level) FROM problems p")
-    problem_levels = [{'level': value[0], 'slug': create_slug(value[0])} for value in data]
+    problem_levels = [{'level': value[0], 'slug': utility.create_slug(value[0])} for value in data]
     database.close_connection(conn)
     return jsonify({'problem_levels': problem_levels})
 
@@ -107,7 +106,7 @@ def get_problem_levels():
 def get_problem_statuses():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT distinct(p.status) FROM problems p")
-    problem_statuses = [{'status': value[0], 'slug': create_slug(value[0])} for value in data]
+    problem_statuses = [{'status': value[0], 'slug': utility.create_slug(value[0])} for value in data]
     database.close_connection(conn)
     return jsonify({'problem_statuses': problem_statuses})
 
@@ -116,7 +115,7 @@ def get_problem_statuses():
 def get_platforms():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT name, url, icon FROM platforms")
-    platforms = [{'name': name, 'url': url, 'icon': icon, 'slug': create_slug(name)} for name, url, icon in data]
+    platforms = [{'name': name, 'url': url, 'icon': icon, 'slug': utility.create_slug(name)} for name, url, icon in data]
     database.close_connection(conn)
     return jsonify({'platforms': platforms})
 
@@ -125,7 +124,7 @@ def get_platforms():
 def get_trackers():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT name, level FROM trackers")
-    trackers = [{'name': name, 'level': level, 'slug': create_slug(name)} for name, level in data]
+    trackers = [{'name': name, 'level': level, 'slug': utility.create_slug(name)} for name, level in data]
     database.close_connection(conn)
     return jsonify({'trackers': trackers})
 
@@ -134,7 +133,7 @@ def get_trackers():
 def get_companies():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT name FROM companies")
-    companies = [{'name': name[0], 'slug': create_slug(name[0])} for name in data]
+    companies = [{'name': name[0], 'slug': utility.create_slug(name[0])} for name in data]
     database.close_connection(conn)
     return jsonify({'companies': companies})
 
@@ -143,7 +142,7 @@ def get_companies():
 def get_remarks():
     conn = database.create_connection()
     data = database.fetch_data(conn, "SELECT text from remarks")
-    remarks = [{'remark': item[0], 'slug': create_slug(item[0])} for item in data]
+    remarks = [{'remark': item[0], 'slug': utility.create_slug(item[0])} for item in data]
     database.close_connection(conn)
     return jsonify({'remarks': remarks})
 
@@ -172,7 +171,8 @@ def get_reminders():
 def get_timeline():
     conn = database.create_connection()
     full_query__result = database.fetch_data(conn,
-                                             "select DISTINCT(Date(date_added)) as problem_date from problems order by problem_date desc")
+                                             "select DISTINCT(Date(date_added)) as problem_date from problems order "
+                                             "by problem_date desc")
     full_timeline = {}
     prev_timeline = {}
     curr_timeline = {}
@@ -185,7 +185,7 @@ def get_timeline():
         problems = []
         for value in data:
             id, name = value
-            problems.append({'id': id, 'name': name, 'slug': create_slug(name)})
+            problems.append({'id': id, 'name': name, 'slug': utility.create_slug(name)})
 
         if datetime.strptime(date_value, "%Y-%m-%d").month == datetime.now().month:
             curr_timeline[date_value] = problems
@@ -206,11 +206,15 @@ def get_analytics():
     conn = database.create_connection()
     total_count = database.fetch_data(conn, "SELECT count(*) from problems")
     today_count = database.fetch_data(conn,
-                                      "SELECT COUNT(*) FROM problems p where date(p.date_added) = date('now', 'localtime')")
+                                      "SELECT COUNT(*) FROM problems p where date(p.date_added) = date('now', "
+                                      "'localtime')")
     month_count = database.fetch_data(conn,
-                                      "SELECT COUNT(*) FROM problems p WHERE strftime('%m', p.date_added) = strftime('%m', 'now') AND strftime('%Y', p.date_added) = strftime('%Y', 'now')")
+                                      "SELECT COUNT(*) FROM problems p WHERE strftime('%m', p.date_added) = strftime("
+                                      "'%m', 'now') AND strftime('%Y', p.date_added) = strftime('%Y', 'now')")
     prev_month = database.fetch_data(conn,
-                                     "SELECT COUNT(*) FROM problems p WHERE strftime('%m', p.date_added) = strftime('%m', 'now', '-1 month') AND strftime('%Y', p.date_added) = strftime('%Y', 'now', '-1 month')")
+                                     "SELECT COUNT(*) FROM problems p WHERE strftime('%m', p.date_added) = strftime("
+                                     "'%m', 'now', '-1 month') AND strftime('%Y', p.date_added) = strftime('%Y', "
+                                     "'now', '-1 month')")
     prev_month_focus = database.fetch_data(conn, '''
     SELECT name
         FROM (
@@ -243,7 +247,8 @@ def get_analytics():
     levels_data = database.fetch_data(conn, "SELECT distinct(p.level), Count(*) from problems p group by p.level")
     status_data = database.fetch_data(conn, "SELECT distinct(p.status), Count(*) from problems p group by p.status")
     types_data = database.fetch_data(conn,
-                                     "SELECT distinct(pt.name), Count(p.id) from problem_type pt left join problems p on p.typeid = pt.id group by pt.id")
+                                     "SELECT distinct(pt.name), Count(p.id) from problem_type pt left join problems p "
+                                     "on p.typeid = pt.id group by pt.id")
     companies_data = database.fetch_data(conn, '''
     SELECT c.name AS company_name,
        COALESCE((
@@ -261,10 +266,10 @@ def get_analytics():
 
     analytics['month_count'] = month_count[0][0]
     analytics['prev_month_count'] = prev_month[0][0]
-    analytics['levels'] = [{'level': level, 'slug': create_slug(level), 'count': count} for level, count in levels_data]
-    analytics['statuses'] = [{'status': status, 'slug': create_slug(status), 'count': count} for status, count in status_data]
-    analytics['types'] = [{'type': type,'slug': create_slug(type), 'count': count} for type, count in types_data]
-    analytics['companies'] = [{'company': name, 'slug': create_slug(name), 'count': count} for name, count in companies_data]
+    analytics['levels'] = [{'level': level, 'slug': utility.create_slug(level), 'count': count} for level, count in levels_data]
+    analytics['statuses'] = [{'status': status, 'slug': utility.create_slug(status), 'count': count} for status, count in status_data]
+    analytics['types'] = [{'type': type,'slug': utility.create_slug(type), 'count': count} for type, count in types_data]
+    analytics['companies'] = [{'company': name, 'slug': utility.create_slug(name), 'count': count} for name, count in companies_data]
     database.close_connection(conn)
     return jsonify({'analytics': analytics})
 
@@ -284,27 +289,3 @@ def system_status():
     if os.path.exists("codebase.lock"):
         status = 'sys-update'
     return jsonify({'message': status})
-
-
-def create_slug(input_string):
-    # Convert the string to lowercase and replace spaces with hyphens
-    slug = input_string.lower().replace(' ', '-')
-    # Remove any characters that are not alphanumeric or hyphens
-    slug = re.sub(r'[^a-z0-9\-]', '', slug)
-    # Remove multiple consecutive hyphens
-    slug = re.sub(r'\-+', '-', slug)
-    # Remove leading and trailing hyphens
-    slug = slug.strip('-')
-    return slug
-
-
-'''
-def schedule_update():
-    logging.info("Running Scheduled Update....")
-    updator.init_parent_repo()
-    logging.info("Scheduled Update Finished....")
-
-
-# Schedule the function to run every 2 minutes
-schedule.every(2).minutes.do(schedule_update)
-'''

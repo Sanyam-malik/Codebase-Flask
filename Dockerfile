@@ -51,6 +51,7 @@ ENV SMTP_ADDRESS=""
 ENV SMTP_PORT=""
 ENV SMTP_USERNAME=""
 ENV SMTP_PASSWORD=""
+ENV RECIPIENT_EMAIL=""
 
 # Start cron service and Flask application concurrently
 CMD cron -f & python run.py

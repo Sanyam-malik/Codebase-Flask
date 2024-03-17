@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import platform
+import re
 import shutil
 import smtplib
 import subprocess
@@ -36,12 +37,13 @@ def recursive_chmod(path, mode):
             os.chmod(os.path.join(root, file), mode)
 
 
-def send_email(recipient_email, subject, body_text, body_html):
+def send_email(subject, body_text, body_html):
     # Fetch SMTP credentials from environment variables
     smtp_server = os.environ.get('SMTP_SERVER')
     smtp_port = os.environ.get('SMTP_PORT')
     smtp_username = os.environ.get('SMTP_USERNAME')
     smtp_password = os.environ.get('SMTP_PASSWORD')
+    recipient_email = os.environ.get('RECIPIENT_EMAIL')
 
     if not (smtp_server and smtp_port and smtp_username and smtp_password):
         logging.info("SMTP environment variables not set.")
@@ -219,3 +221,15 @@ def prepare_updates():
             copy_file("temp_app/" + file, "updates/" + file)
     except Exception as e:
         logging.warning(f"Error while preparing system for update..{e}")
+
+
+def create_slug(input_string):
+    # Convert the string to lowercase and replace spaces with hyphens
+    slug = input_string.lower().replace(' ', '-')
+    # Remove any characters that are not alphanumeric or hyphens
+    slug = re.sub(r'[^a-z0-9\-]', '', slug)
+    # Remove multiple consecutive hyphens
+    slug = re.sub(r'\-+', '-', slug)
+    # Remove leading and trailing hyphens
+    slug = slug.strip('-')
+    return slug

@@ -348,5 +348,27 @@ def remove_lock_file(lock_file_path):
         logging.warning("Lock file doesn't exist.")
 
 
+def send_inactivity_reminder():
+    conn = database.create_connection()
+    last_date_added = database.fetch_data(conn, "SELECT DATE(date_added) FROM problems ORDER BY date_added DESC LIMIT "
+                                                "1;")
+    if len(last_date_added) > 0:
+        last_date_added = datetime.strptime(last_date_added[0][0], "%Y-%m-%d").date()
+        current_datetime = datetime.now().date()
+        difference = current_datetime - last_date_added
+        # Extract hours and days from the timedelta object
+        hours_difference = int(difference.total_seconds()//3600)
+        if hours_difference > 24:
+            print(hours_difference)
+            #utility.send_email("", "", "")
+
+
+def send_reminder_email():
+    conn = database.create_connection()
+    reminders = database.fetch_data(conn, "select * from reminders")
+    for reminder in reminders:
+        print(reminder)
+
+
 if __name__ == "__main__":
     init_system()
