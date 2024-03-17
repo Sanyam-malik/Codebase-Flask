@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import shutil
+import stat
 import subprocess
 
 import sysenv
@@ -17,24 +18,50 @@ update_url = ''
 update_branch = ''
 update_access_token = ''
 if "UPDATE_URL" in sysenv.environ:
-    update_url = sysenv.environ["UPDATE_URL"] + ".git"
+    update_url = sysenv.environ["UPDATE_URL"]
 if "UPDATE_BRANCH" in sysenv.environ:
     update_branch = sysenv.environ["UPDATE_BRANCH"]
 if "UPDATE_ACCESS_TOKEN" in sysenv.environ:
     update_access_token = sysenv.environ["UPDATE_ACCESS_TOKEN"]
 
 
+def recursive_chmod(path, mode):
+    for root, dirs, files in os.walk(path):
+        os.chmod(root, mode)
+        for directory in dirs:
+            os.chmod(os.path.join(root, directory), mode)
+        for file in files:
+            os.chmod(os.path.join(root, file), mode)
+
+
+def remove_git_folder(path):
+    git_folder = os.path.join(path, '.git')
+
+    try:
+        if os.path.exists(git_folder):
+            if platform.system() == 'Windows':
+                # On Windows, recursively remove the .git folder
+                os.system(f'del /F /S /Q /A "{git_folder}"')
+            elif platform.system() == 'Linux':
+                # On Linux, use subprocess to execute shell command to remove the .git folder
+                os.system(f'rm -rf {git_folder}')
+            logging.info(f"Removed .git folder at '{git_folder}'")
+        else:
+            logging.info(f".git folder not found at '{git_folder}'")
+    except Exception as e:
+        logging.info(f"Error occurred: {str(e)}")
+
+
 def clone_repository(repo_url, branch, dest_path, access_token):
     if os.path.exists(dest_path):
         remove_directory(dest_path)
     try:
-
         command = ['git', 'clone', '--branch', branch]
-
         if access_token:
             # Include the access token in the clone URL for authentication
             protocol = repo_url.split("://")[0]
-            repository_url_with_token = f'{protocol}://{access_token}@{repo_url.split("://")[1]}'
+            url = repo_url.split("://")[1]
+            repository_url_with_token = f'{protocol}://{access_token}@{url}'
             command.append(repository_url_with_token)
         else:
             command.append(repo_url)
@@ -42,7 +69,8 @@ def clone_repository(repo_url, branch, dest_path, access_token):
         command.append(dest_path)
 
         subprocess.check_output(command)
-        os.chmod(dest_path, 0o777)
+        remove_git_folder(dest_path)
+        # recursive_chmod(dest_path, 0o777)
         logging.info(f"Repository cloned successfully: {dest_path}")
     except subprocess.CalledProcessError as e:
         logging.warning(f"Error while cloning repository: {e}")
@@ -55,16 +83,16 @@ def remove_directory(dest_path):
     try:
         if platform.system() == 'Windows':
             # Use shutil.rmtree to remove most of the directory contents
-            shutil.rmtree(dest_path, ignore_errors=True)
+            shutil.rmtree(os.path.abspath(dest_path), ignore_errors=True)
 
             # Use subprocess to run the 'rmdir' command for any remaining files/folders
-            subprocess.run(['rmdir', '/s', '/q', dest_path], check=True)
+            #subprocess.run(['rmdir', '/s', '/q', os.path.abspath(dest_path)], check=True)
         elif platform.system() == 'Linux':
             # Use shutil.rmtree to remove most of the directory contents
-            shutil.rmtree(dest_path, ignore_errors=True)
+            shutil.rmtree(os.path.abspath(dest_path), ignore_errors=True)
 
             # Use subprocess to run the 'rm' command recursively
-            subprocess.run(['rm', '-rf', dest_path], check=True)
+            #subprocess.run(['rm', '-rf', os.path.abspath(dest_path)], check=True)
         logging.info(f"Repository deleted successfully: {dest_path}")
     except Exception as e:
         logging.warning(f"error while removing repository: {e}")
