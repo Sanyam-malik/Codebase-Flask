@@ -18,6 +18,11 @@ services:
       UPDATE_URL: "https://github.com/Sanyam-malik/Codebase-Flask.git"
       UPDATE_BRANCH: "main"
       UPDATE_ACCESS_TOKEN: ""
+      SMTP_ENABLE: "false"
+      SMTP_ADDRESS: ""
+      SMTP_PORT: ""
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
     restart: always
 
 networks:

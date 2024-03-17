@@ -4,7 +4,7 @@ FROM python:3.9-slim
 # Set the image name
 LABEL maintainer="Sanyam Malik"
 LABEL description="Codebase-flask App"
-LABEL version="2.0"
+LABEL version="3.0"
 LABEL image_name="codebase-flask"
 LABEL tag="latest"
 
@@ -46,6 +46,11 @@ ENV ACCESS_TOKEN=""
 ENV UPDATE_URL="https://github.com/Sanyam-malik/Codebase-Flask.git"
 ENV UPDATE_BRANCH="main"
 ENV UPDATE_ACCESS_TOKEN=""
+ENV SMTP_ENABLE="false"
+ENV SMTP_ADDRESS=""
+ENV SMTP_PORT=""
+ENV SMTP_USERNAME=""
+ENV SMTP_PASSWORD=""
 
 # Start cron service and Flask application concurrently
 CMD cron -f & python run.py

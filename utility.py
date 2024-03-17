@@ -3,8 +3,10 @@ import logging
 import os
 import platform
 import shutil
-import stat
+import smtplib
 import subprocess
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import sysenv
 
@@ -32,6 +34,40 @@ def recursive_chmod(path, mode):
             os.chmod(os.path.join(root, directory), mode)
         for file in files:
             os.chmod(os.path.join(root, file), mode)
+
+
+def send_email(recipient_email, subject, body_text, body_html):
+    # Fetch SMTP credentials from environment variables
+    smtp_server = os.environ.get('SMTP_SERVER')
+    smtp_port = os.environ.get('SMTP_PORT')
+    smtp_username = os.environ.get('SMTP_USERNAME')
+    smtp_password = os.environ.get('SMTP_PASSWORD')
+
+    if not (smtp_server and smtp_port and smtp_username and smtp_password):
+        logging.info("SMTP environment variables not set.")
+
+    # Create the email message
+    message = MIMEMultipart("alternative")
+    message["From"] = smtp_username
+    message["To"] = recipient_email
+    message["Subject"] = subject
+
+    # Attach both plain text and HTML versions of the body
+    message.attach(MIMEText(body_text, "plain"))
+    message.attach(MIMEText(body_html, "html"))
+
+    # Connect to the SMTP server
+    server = smtplib.SMTP(smtp_server, smtp_port)
+    server.starttls()
+
+    # Log in to the SMTP server
+    server.login(smtp_username, smtp_password)
+
+    # Send the email
+    server.sendmail(smtp_username, recipient_email, message.as_string())
+
+    # Quit the SMTP server
+    server.quit()
 
 
 def remove_git_folder(path):
@@ -70,7 +106,6 @@ def clone_repository(repo_url, branch, dest_path, access_token):
 
         subprocess.check_output(command)
         remove_git_folder(dest_path)
-        # recursive_chmod(dest_path, 0o777)
         logging.info(f"Repository cloned successfully: {dest_path}")
     except subprocess.CalledProcessError as e:
         logging.warning(f"Error while cloning repository: {e}")
@@ -85,14 +120,10 @@ def remove_directory(dest_path):
             # Use shutil.rmtree to remove most of the directory contents
             shutil.rmtree(os.path.abspath(dest_path), ignore_errors=True)
 
-            # Use subprocess to run the 'rmdir' command for any remaining files/folders
-            #subprocess.run(['rmdir', '/s', '/q', os.path.abspath(dest_path)], check=True)
         elif platform.system() == 'Linux':
             # Use shutil.rmtree to remove most of the directory contents
             shutil.rmtree(os.path.abspath(dest_path), ignore_errors=True)
 
-            # Use subprocess to run the 'rm' command recursively
-            #subprocess.run(['rm', '-rf', os.path.abspath(dest_path)], check=True)
         logging.info(f"Repository deleted successfully: {dest_path}")
     except Exception as e:
         logging.warning(f"error while removing repository: {e}")
