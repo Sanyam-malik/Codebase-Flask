@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  codebase-flask:
+    container_name: codebase-flask
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4500:5000"
+    environment:
+      TZ: "Asia/Kolkata"
+    restart: always
+
+networks:
+  codebase-network:
+    name: codebase-network

@@ -1,0 +1,12 @@
+
+Codebase
+------------------------------------------------------------
+
+
+This is a friendly reminder about the upcoming {{EVENTNAME}}. We're looking forward to your participation and engagement in this event.
+------------------------------------------------------------
+Start Solving Now ({{URL}})
+
+
+Visit the Repository to know more
+------------------------------------------------------------
