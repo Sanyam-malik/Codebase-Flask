@@ -1,0 +1,47 @@
+{
+  "playlist": {
+    "required": ["name", "uid", "desc", "sections"],
+    "optional": [],
+    "depends": {
+      "sections": {
+        "type": "list",
+        "required": ["name", "uid", "desc", "items"],
+        "optional": [],
+        "depends": {
+          "items": {
+            "type": "list",
+            "required": ["name", "uid", "type", "desc"],
+            "optional": ["image", "data", "url"]
+          }
+        }
+      }
+    }
+  },
+  "note": {
+    "required": ["name", "content"],
+    "optional": [],
+    "depends": {
+      "content": {
+        "type": "list",
+        "required": ["name"],
+        "optional": ["url", "data"]
+      }
+    }
+  },
+  "event": {
+    "required": ["name", "description", "recurrence"],
+    "optional": ["date", "start_time", "end_time"]
+  },
+  "tracker": {
+    "required": ["name", "level"],
+    "optional": []
+  },
+  "link": {
+    "required": ["name", "url", "icon"],
+    "optional": []
+  },
+  "song": {
+    "required": ["name", "url"],
+    "optional": []
+  }
+}

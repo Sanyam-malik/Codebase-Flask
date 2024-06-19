@@ -32,7 +32,7 @@ Before Running this first please add the relevant changes in the config.yaml lik
 Once you've installed the dependencies, you can start the development server:
 
 ```bash
-python run.py
+python run_gunicorn.py
 ```
 
 ## Features

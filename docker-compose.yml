@@ -7,8 +7,20 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "4500:5000"
+      - "80:5000"
     environment:
+      ACCESS_TOKEN: ""
+      BRANCH_NAME: "new-journey"
+      DATABASE_NAME: "codebase"
+      DEST_PATH: "codebase"
+      EXTERNAL_URL: ""
+      GIT_URL: "https://github.com/Sanyam-malik/Codebase"
+      RECIPIENT_EMAIL: ""
+      SMTP_ADDRESS: "smtp.gmail.com"
+      SMTP_ENABLE: "true"
+      SMTP_PASSWORD: ""
+      SMTP_PORT: "587"
+      SMTP_USERNAME: ""
       TZ: "Asia/Kolkata"
     restart: always
 

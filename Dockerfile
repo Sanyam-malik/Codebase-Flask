@@ -1,58 +1,42 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use an official Python runtime based on Alpine as a parent image
+FROM python:3.9-alpine
 
-# Set the image name
+# Set the image name and labels
 LABEL maintainer="Sanyam Malik"
-LABEL description="Codebase-flask App"
+LABEL description="Codebase-Flask"
 LABEL version="3.0"
 LABEL image_name="codebase-flask"
 LABEL tag="latest"
 
-# Install git and cron
-RUN apt-get update && apt-get install -y git cron curl nano
+# Install git, cron, and other dependencies including Java 17 and C++ compiler
+RUN apk update && \
+    apk add --no-cache git curl nano bash redis \
+    openjdk17 \
+    g++
 
-# Set the working directory in the container
-WORKDIR /codebase-flask
+# Set the working directory
+WORKDIR /app
 
-# Copy the current directory contents into the container at /codebase-flask
-COPY . /codebase-flask
+# Copy the entire current directory contents into the container at /app
+COPY . /app
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Make port available as specified by the PORT environment variable or default to 5000
-ENV PORT=5000
-EXPOSE $PORT
+# Set the PYTHONPATH to include the shared directory
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 
-# Create cron log file
+# Create cron log file for both apps
 RUN touch /var/log/cron.log
 
 # Make the script executable
-RUN chmod +x /codebase-flask/refresh.sh
+RUN chmod +x /app/refresh.sh
 
-# Add cron job command to the system-wide cron directory
-RUN echo "*/10 * * * * root /codebase-flask/refresh.sh >> /var/log/cron.log 2>&1" >> /etc/cron.d/crontab
+# Add cron job command to the system-wide cron directory for both apps
+RUN echo "*/10 * * * * /app/refresh.sh >> /var/log/cron.log 2>&1" >> /etc/crontabs/root
 
-# Start cron service in the background and tail the log file
-RUN cron
+# Copy entrypoint script
+RUN chmod +x /app/entrypoint.sh
 
-# Define environment variables
-ENV AUTO_UPDATE="false"
-ENV DATABASE_NAME="codebase"
-ENV GIT_URL="https://github.com/Sanyam-malik/Codebase.git"
-ENV DEST_PATH="codebase"
-ENV BRANCH_NAME="new-journey"
-ENV ACCESS_TOKEN=""
-ENV UPDATE_URL="https://github.com/Sanyam-malik/Codebase-Flask.git"
-ENV UPDATE_BRANCH="main"
-ENV UPDATE_ACCESS_TOKEN=""
-ENV SMTP_ENABLE="false"
-ENV SMTP_ADDRESS=""
-ENV SMTP_PORT=""
-ENV SMTP_USERNAME=""
-ENV SMTP_PASSWORD=""
-ENV RECIPIENT_EMAIL=""
-ENV EXTERNAL_URL=""
-
-# Start cron service and Flask application concurrently
-CMD cron -f & python run.py
+# Start cron service and both Flask applications concurrently
+CMD ["/app/entrypoint.sh"]
